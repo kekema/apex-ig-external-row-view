@@ -35,7 +35,7 @@ function(config)
     return config;
 }
 ```
-Individual fields can be further programmatically configured as per the [field properties](https://docs.oracle.com/en/database/oracle/apex/24.1/aexjs/recordView.html#fields). For this, you can utilize the IG column JavaScript init func. Eg: 
+Individual fields can be further programmatically configured as per the [field properties](https://docs.oracle.com/en/database/oracle/apex/24.1/aexjs/recordView.html#fields). For this, you can utilize the IG column JavaScript init func. For example when you want to configure your own layout using field column spans: 
 ```
 function(options) {
     options.defaultGridColumnOptions = {
