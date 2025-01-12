@@ -27,8 +27,8 @@
         "plugin" : {
           "internalName" : "LIB4X.AXT.IG.EXTERNALROWVIEW",
           "type" : "region",
-	  "demo" : "https://apex.oracle.com/pls/apex/r/yola/demo/task-validation",
-	  "previewImage" : "https://github.com/kekema/apex-validation/blob/main/custom-client-side-validation.jpg?raw=true"
+	  "demo" : "https://apex.oracle.com/pls/apex/r/yola/sample-interactive-grids/item-type-plug-ins-erv-region3",
+	  "previewImage" : "https://github.com/kekema/apex-ig-external-row-view/blob/main/ig-external-row-view.jpg?raw=true"
         }
       }
     }
