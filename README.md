@@ -33,7 +33,7 @@ Next options can be set programmatically: 'alwaysEdit', 'applyTemplateOptions', 
 See the [recordView options](https://docs.oracle.com/en/database/oracle/apex/24.1/aexjs/recordView.html) for an explanation on all except the last option. 
 
 The 'suppressValCloseQuestion' option can be used to suppress a default behavior when a dialog or drawer is closed while the row still has validation errors. By default it will ask a question if to proceed. 
-<br/><br/>
+
 
 ```
 function(config)
