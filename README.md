@@ -1,7 +1,7 @@
 # apex-ig-external-row-view
 Replace the IG Single Row View with a Row View in a regular region, dialog or drawer.
 
-See this blog item for an overview of the functionality.
+See this [blog item](https://karelekema.hashnode.dev/oracle-apex-ig-external-row-view-plugin) for an overview of the functionality.
 
 The region plugin is a wrapper around the recordView widget which gets instantiated with the same model and field configuration as the related IG.
 
