@@ -1,0 +1,35 @@
+{
+    "name" : "IG External Row View",
+    "version" : "1.0.0",
+    "description" : "Replace the IG Single Row View with a Row View in a regular region, dialog or drawer. #lib4x",
+    "keywords" : ["IG", "Row View", "Edit"],
+    "homepage" : "https://github.com/kekema/apex-ig-external-row-view",
+    "bugs" : {
+      "url" : "https://github.com/kekema/apex-ig-external-row-view/issues",
+      "email" : "karel0008@gmail.com"
+    },
+    "license" : "MIT",
+    "commercial" : "No",
+    "author" : {
+      "name" : "Karel Ekema",
+      "email" : "karel0008@gmail.com",
+      "url" : "https://karelekema.hashnode.dev",
+      "twitter": "@KarelEkema"
+    },
+    "repository" : {
+      "type" : "git",
+      "url" : "https://github.com/kekema/apex-ig-external-row-view"
+    },
+    "oracle" : {
+      "versions": ["19.0.0.0"],	
+      "apex" : {
+        "versions" : ["24.1"],
+        "plugin" : {
+          "internalName" : "LIB4X.AXT.IG.EXTERNALROWVIEW",
+          "type" : "region",
+	  "demo" : "https://apex.oracle.com/pls/apex/r/yola/demo/task-validation",
+	  "previewImage" : "https://github.com/kekema/apex-validation/blob/main/custom-client-side-validation.jpg?raw=true"
+        }
+      }
+    }
+}
