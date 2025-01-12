@@ -64,14 +64,16 @@ The 'lib4x-ig-erv-hidden' class can be used to hide a field. Have the class on t
 This class can also be used on 'Link Attributes' in case you have a link column in the IG grid, but you don't want to show the link in the ERV.
 <br/><br/>
 In case you want to include a link column in the IG grid as to open the ERV (dialog or drawer) from there, you can use the 'lib4x-erv-open' action. Link config:
-<br/><br/>
-![image](https://github.com/user-attachments/assets/2c6a493f-d4ff-4999-b62b-7677211e1205)
-<br/><br/>
+<p>
+<img src="https://github.com/user-attachments/assets/2c6a493f-d4ff-4999-b62b-7677211e1205" height="60%" width="60%">    
+</p>
+
 `#action$lib4x-erv-open`
 `<span class="fa fa-edit"/>`
 `lib4x-ig-erv-hidden`
 <br/><br/>
 Next messages are available for translation:<br/>
+    
 * 'LIB4X.ERV.COL_EXP_GRP': 'Collapse/Expand Groups',
 * 'LIB4X.ERV.COL_GRP': 'Collapse Groups',
 * 'LIB4X.ERV.EXP_GRP': 'Expand Groups',
