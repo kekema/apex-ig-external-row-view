@@ -3,6 +3,10 @@ Replace the IG Single Row View with a Row View in a regular region, dialog or dr
 
 See this [blog item](https://karelekema.hashnode.dev/oracle-apex-ig-external-row-view-plugin) for an overview of the functionality.
 
+<p>
+<img src="./ig-external-row-view.jpg" height="80%" width="80%">
+</p>
+
 The region plugin is a wrapper around the recordView widget which gets instantiated with the same model and field configuration as the related IG.
 
 To be able to configure an external row view (ERV) for an IG, you need to disable the IG Single Row View (SRV) feature. In IG init function:
@@ -15,18 +19,22 @@ function(options) {
 }
 ```
 Configuring an ERV region:
-<br/><br/>
-![](https://github.com/user-attachments/assets/03072dc7-283f-49f4-b300-95be204c9a6a)<br/><br/>
-![](https://github.com/user-attachments/assets/e7940f80-7fb2-4171-9249-9ffcad54fd03)
-<br/><br/>
+<p>
+<img src="https://github.com/user-attachments/assets/03072dc7-283f-49f4-b300-95be204c9a6a" height="40%" width="40%">    
+</p>
+<p>
+<img src="https://github.com/user-attachments/assets/e7940f80-7fb2-4171-9249-9ffcad54fd03" height="40%" width="40%">    
+</p>
 For an explanation of the declarative settings, see the inline help.
 <br/><br/>
 Next options can be set programmatically: 'alwaysEdit', 'applyTemplateOptions', 'formCssClasses', 'labelAlignment', 'showNullAs', 'skipDeletedRecords', 'suppressValCloseQuestion'
 <br/><br/>
+
 See the [recordView options](https://docs.oracle.com/en/database/oracle/apex/24.1/aexjs/recordView.html) for an explanation on all except the last option. 
-<br/><br/>
+
 The 'suppressValCloseQuestion' option can be used to suppress a default behavior when a dialog or drawer is closed while the row still has validation errors. By default it will ask a question if to proceed. 
-<br/>
+<br/><br/>
+
 ```
 function(config)
 {
@@ -35,7 +43,9 @@ function(config)
     return config;
 }
 ```
-Individual fields can be further programmatically configured as per the [field properties](https://docs.oracle.com/en/database/oracle/apex/24.1/aexjs/recordView.html#fields). For this, you can utilize the IG column JavaScript init func. For example when you want to configure your own layout using field column spans: 
+
+Individual fields can be further programmatically configured as per the [field properties](https://docs.oracle.com/en/database/oracle/apex/24.1/aexjs/recordView.html#fields). For this, you can utilize the IG column JavaScript init func. For example when you want to configure your own layout using field column spans:
+
 ```
 function(options) {
     options.defaultGridColumnOptions = {
@@ -44,6 +54,7 @@ function(options) {
     return options;
 }
 ```
+
 Next classes can be used to reduce a field item width. Configure the class on the IG column, Advanced CSS classes.<br/>
 * lib4x-form-field-width-25p
 * lib4x-form-field-width-50p
