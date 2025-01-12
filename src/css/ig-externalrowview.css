@@ -1,0 +1,79 @@
+.lib4x-ig-erv .a-RV-body {
+    --a-rv-body-padding-x: 0.5rem;
+}
+
+.lib4x-ig-erv .a-RV {
+    --a-toolbar-item-spacing: 0.3rem;
+}
+
+.lib4x-ig-erv .a-GV-columnItem:has(.lib4x-form-field-width-25p)
+{
+    width: 25%;
+}
+
+.lib4x-ig-erv .a-GV-columnItem:has(.lib4x-form-field-width-50p)
+{
+    width: 50%;
+}
+
+.lib4x-ig-erv .a-GV-columnItem:has(.lib4x-form-field-width-75p)
+{
+    width: 75%;
+}
+
+.lib4x-form-label-width-20p {
+    --a-form-label-container-width: 20%;
+}
+
+.lib4x-form-label-width-25p {
+    --a-form-label-container-width: 25%;
+}
+
+.lib4x-form-label-width-30p {
+    --a-form-label-container-width: 30%;
+}
+
+.lib4x-form-label-width-35p {
+    --a-form-label-container-width: 35%;
+}
+
+.lib4x-form-label-width-40p {
+    --a-form-label-container-width: 40%;
+}
+
+.lib4x-form-label-width-100 {
+    --a-form-label-container-width: 100px;
+}
+
+.lib4x-form-label-width-150 {
+    --a-form-label-container-width: 150px;
+}
+
+.lib4x-form-label-width-200 {
+    --a-form-label-container-width: 200px;
+}
+
+.lib4x-form-label-width-250 {
+    --a-form-label-container-width: 250px;
+}
+
+.lib4x-ig-erv .u-Form-groupHeading button {
+    width: 100%;
+    text-align: start;
+    border: 0;
+    font-size: .65em;
+    padding: 4px;
+}
+
+.lib4x-ig-erv .u-Form-groupHeading .a-Icon {
+    vertical-align: text-bottom;
+}
+
+.lib4x-ig-erv h3.u-Form-groupHeading {
+    margin-block-start: 0.5em;
+    margin-block-end: 0.4em;
+}
+
+.lib4x-ig-erv .a-RV-body.u-flex .a-Alert {
+    max-width: 20%;
+}
