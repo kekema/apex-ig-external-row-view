@@ -23,7 +23,7 @@ Configuring an ERV region:
 <img src="https://github.com/user-attachments/assets/03072dc7-283f-49f4-b300-95be204c9a6a" height="40%" width="40%">    
 </p>
 <p>
-<img src="https://github.com/user-attachments/assets/e7940f80-7fb2-4171-9249-9ffcad54fd03" height="40%" width="40%">    
+<img src="https://github.com/user-attachments/assets/7dcffc5d-2dcf-4370-bb59-7dbbd60b8de3" height="40%" width="40%">    
 </p>
 For an explanation of the declarative settings, see the inline help.
 <br/><br/>
@@ -81,6 +81,10 @@ Next messages are available for translation:<br/>
   
 The recordView widget can be reached via: <br/>
 `apex.region('<ERV Static Id>').widget().recordView('<method>')` <br/>
+
+<h4>APEX Compatibility</h4>
+Version 1.0.0 - build under APEX 24.1<br>
+Version 1.1.0 - build under APEX 24.2
 
 
             
