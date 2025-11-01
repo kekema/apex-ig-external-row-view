@@ -1,3 +1,15 @@
+function get_attr_as_boolean(
+    p_region in apex_plugin.t_region,
+    p_attribute in varchar2
+)
+return boolean
+is
+    l_attribute varchar2(10);
+begin
+    l_attribute := p_region.attributes.get_varchar2(p_attribute);
+    return (l_attribute is not null and l_attribute = 'Y');
+end;
+
 procedure render (
     p_plugin in            apex_plugin.t_plugin,
     p_region in            apex_plugin.t_region,
@@ -12,6 +24,10 @@ is
     l_auto_height           varchar2(10);
     l_height                varchar2(10);
     l_style                 varchar2(100);
+    l_toolbar_conf          varchar2(400);
+    l_show_toolbar          boolean;
+    l_row_action_buttons    boolean;
+    l_navigation_buttons    boolean;
 begin
     if apex_application.g_debug then
         apex_plugin_util.debug_region(p_plugin => p_plugin, p_region => p_region);
@@ -27,6 +43,18 @@ begin
     if (l_auto_height != 'Y') then
         l_style := 'style="height:' || l_height || 'px"';
     end if;
+
+    l_show_toolbar := get_attr_as_boolean(p_region, 'attr_show_toolbar');  
+    l_toolbar_conf := '{' || apex_javascript.add_attribute('show', l_show_toolbar, false, l_show_toolbar);  
+    if (l_show_toolbar) then
+        l_row_action_buttons := get_attr_as_boolean(p_region, 'attr_row_action_buttons');
+        l_toolbar_conf := l_toolbar_conf || apex_javascript.add_attribute('rowActionButtons', l_row_action_buttons);
+        if (l_row_action_buttons) then
+            l_toolbar_conf := l_toolbar_conf || apex_javascript.add_attribute('rowActionButtonsSelection', p_region.attributes.get_varchar2('attr_row_action_buttons_select'), false);
+        end if;
+        l_toolbar_conf := l_toolbar_conf || apex_javascript.add_attribute('navigationButtons', get_attr_as_boolean(p_region, 'attr_navigation_buttons'), false, false);
+    end if;
+    l_toolbar_conf := l_toolbar_conf || '}';    
 
     sys.htp.p('<div id="' || l_region_id || '_rv"' || l_style || '></div>');
  
@@ -45,7 +73,7 @@ begin
         p_directory => p_plugin.file_prefix || 'css/' 
     );    
 
-    apex_javascript.add_inline_code(
+    apex_javascript.add_onload_code(
         p_code => apex_string.format(
             'lib4x.axt.ig.externalRowView._init("%s", "%s", "%s", "%s", "%s", "%s", "%s", '
             , l_region_id
@@ -55,6 +83,6 @@ begin
             , l_form_label_width
             , l_auto_height
             , l_height
-        ) || p_region.init_javascript_code || ');'
+        ) || l_toolbar_conf || ', ' || p_region.init_javascript_code || ');'
     );    
 end;
