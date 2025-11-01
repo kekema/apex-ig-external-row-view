@@ -24,6 +24,7 @@ lib4x.axt.ig.externalRowView = (function($) {
     const RV_EXT = '_rv';
     let rvOptions = {};         // plugin options and config
     let rv_igStaticId = {};     // maps the rv widget id to the IG static Id
+    let ig_rvStaticId = {};     // has an entry for every IG which has a related erv
 
     /* 
      * An IG with an ext row view (ERV) is made readonly. Upon dbl click, the ext row view will be put in edit mode (and 
@@ -35,7 +36,42 @@ lib4x.axt.ig.externalRowView = (function($) {
      */
     let gridModule = (function() 
     {
-        $('#wwvFlowForm').on("interactivegridviewmodelcreate", function(jQueryEvent, data) { 
+        // Overwrite IG grid setEditMode method
+        function extendGridWidget()
+        {
+            $.widget("apex.grid", $.apex.grid, {
+                setEditMode: function (editMode, select) {
+                    let igStaticId = this.element.closest('.a-IG').interactiveGrid('option').config.regionStaticId;
+                    if (ig_rvStaticId.hasOwnProperty(igStaticId))
+                    {
+                        rowViewModule.setEditMode(ig_rvStaticId[igStaticId], editMode);
+                        return;
+                    }
+                    return this._super(editMode, select);
+                }
+            });         
+        }
+
+        if ($.apex.grid)
+        {
+            // if loaded already, extend now, else await the load event
+            extendGridWidget();
+        }   
+
+        var bodyElem = document.getElementsByTagName("body")[0];
+        bodyElem.addEventListener("load", function(event) {
+            if (event.target.nodeName === "SCRIPT")
+            {
+                let srcAttr = event.target.getAttribute("src");
+                // grid subwidget
+                if (srcAttr && srcAttr.includes('widget.grid'))
+                {
+                    extendGridWidget();
+                }                 
+            }
+        }, true);   // usecapture is critical here       
+
+        apex.gPageContext$.on("interactivegridviewmodelcreate", function(jQueryEvent, data) { 
             let model = data.model;
             model.subscribe({
                 onChange: function(changeType, change) {
@@ -53,6 +89,15 @@ lib4x.axt.ig.externalRowView = (function($) {
                             {
                                 modelsModule.util.setRecordFieldsValid(model, change.record);
                             }
+                            else
+                            {
+                                // in case of mandatory field validation error caused by opening a field dialog,
+                                // remove the validation message
+                                if (apex.util.getTopApex().jQuery('.ui-dialog-popuplov, .ui-dialog-datepicker').is(':visible'))
+                                {
+                                    model.setValidity('valid', change.recordId, change.field);
+                                }                                    
+                            }                            
                         }
                     }           
                 }
@@ -64,42 +109,7 @@ lib4x.axt.ig.externalRowView = (function($) {
          */
         let initIG = function(igStaticId, rvStaticId, rvStaticIdRv)
         {
-            // Overwrite IG grid setEditMode method
-            function extendGridWidget()
-            {
-                $.widget("apex.grid", $.apex.grid, {
-                    setEditMode: function (editMode, select) {
-                        let staticId = this.element.closest('.a-IG').interactiveGrid('option').config.regionStaticId;
-                        if (staticId == igStaticId)
-                        {
-                            rowViewModule.setEditMode(rvStaticId, editMode);
-                            return;
-                        }
-                        return this._super(editMode, select);
-                    }
-                });         
-            }
-
-            if ($.apex.grid)
-            {
-                // if loaded already, extend now, else await the load event
-                extendGridWidget();
-            }   
-
-            var bodyElem = document.getElementsByTagName("body")[0];
-            bodyElem.addEventListener("load", function(event) {
-                if (event.target.nodeName === "SCRIPT")
-                {
-                    let srcAttr = event.target.getAttribute("src");
-                    // grid subwidget
-                    if (srcAttr && srcAttr.includes('widget.grid'))
-                    {
-                        extendGridWidget();
-                    }                 
-                }
-            }, true);   // usecapture is critical here       
-
-            $(apex.gPageContext$).on("apexreadyend", function(jQueryEvent) { 
+            apex.gPageContext$.on("apexreadyend", function(jQueryEvent) { 
                 let igRegion = apex.region(igStaticId);
                 if (!igRegion || igRegion.type != 'InteractiveGrid')
                 {
@@ -210,13 +220,15 @@ lib4x.axt.ig.externalRowView = (function($) {
         }
 
         // enables to remove a control from a toolbar group
-        function toolbarRemove(toolbar, actionName, labelKey)
+        function toolbarRemove(toolbar, actionName, labelKey, id)
         {
             groupLoop: for (tbGroup of toolbar)
             {
                 for (tbControl of tbGroup.controls)
                 {
-                    if ((tbControl.action && tbControl.action == actionName) ||  (tbControl.labelKey && tbControl.labelKey == labelKey))
+                    if ((tbControl.action && tbControl.action == actionName) ||  
+                       (tbControl.labelKey && tbControl.labelKey == labelKey) ||
+                       (tbControl.id && tbControl.id == id))
                     {
                         let index = tbGroup.controls.indexOf(tbControl);
                         tbGroup.controls.splice(index, 1);
@@ -385,39 +397,67 @@ lib4x.axt.ig.externalRowView = (function($) {
                 }       
                 // include buttons in the toolbar for crud actions and refresh             
                 let actionsContext = apex.actions.createContext('recordView', $("#" + rvStaticIdRv)[0]);
-                let toolbar = $.apex.recordView.copyDefaultToolbar();
-                toolbarRemove(toolbar, null, 'APEX.RV.SETTINGS_MENU');
-                toolbar[0].controls.push(
+                let toolbarConf = options.config.toolbarConf;
+                let toolbar = null;
+                if (toolbarConf.show)
                 {
-                    action: "insert-record",
-                    type: 'BUTTON',
-                    iconOnly: true,
-                    icon: 'icon-ig-add-row'
-                },
-                {
-                    action: "duplicate-record",
-                    type: 'BUTTON',
-                    iconOnly: true,
-                    icon: 'icon-ig-duplicate'                        
-                },
-                {
-                    action: "delete-record",
-                    type: 'BUTTON',
-                    iconOnly: true,
-                    icon: 'icon-ig-delete'                        
-                },
-                {
-                    action: "refresh-record",
-                    type: 'BUTTON',
-                    iconOnly: true,
-                    icon: 'icon-ig-refresh'                        
-                },
-                {
-                    action: "revert-record",
-                    type: 'BUTTON',
-                    iconOnly: true,
-                    icon: 'icon-ig-revert'                        
-                });              
+                    toolbar = $.apex.recordView.copyDefaultToolbar();
+                    toolbarRemove(toolbar, null, 'APEX.RV.SETTINGS_MENU', null);
+                    if (!toolbarConf.navigationButtons)
+                    {
+                        toolbarRemove(toolbar, 'previous-record', null, null);
+                        toolbarRemove(toolbar, 'next-record', null, null);
+                        toolbarRemove(toolbar, null, null, 'recordNumber');
+                    }
+                    if (toolbarConf.rowActionButtons)
+                    {
+                        if (toolbarConf.rowActionButtonsSelection.includes('ADD_ROW')) {
+                            toolbar[0].controls.push(
+                            {
+                                action: "insert-record",
+                                type: 'BUTTON',
+                                iconOnly: true,
+                                icon: 'icon-ig-add-row'
+                            });
+                        }
+                        if (toolbarConf.rowActionButtonsSelection.includes('DUPLICATE_ROW')) {
+                            toolbar[0].controls.push(
+                            {
+                                action: "duplicate-record",
+                                type: 'BUTTON',
+                                iconOnly: true,
+                                icon: 'icon-ig-duplicate'                        
+                            });
+                        }
+                        if (toolbarConf.rowActionButtonsSelection.includes('DELETE_ROW')) {
+                            toolbar[0].controls.push(                        
+                            {
+                                action: "delete-record",
+                                type: 'BUTTON',
+                                iconOnly: true,
+                                icon: 'icon-ig-delete'                        
+                            });
+                        }
+                        if (toolbarConf.rowActionButtonsSelection.includes('REFRESH_ROW')) {
+                            toolbar[0].controls.push(                            
+                            {
+                                action: "refresh-record",
+                                type: 'BUTTON',
+                                iconOnly: true,
+                                icon: 'icon-ig-refresh'                        
+                            });
+                        }
+                        if (toolbarConf.rowActionButtonsSelection.includes('REVERT_ROW')) {
+                            toolbar[0].controls.push(                          
+                            {
+                                action: "revert-record",
+                                type: 'BUTTON',
+                                iconOnly: true,
+                                icon: 'icon-ig-revert'                        
+                            }); 
+                        }
+                    } 
+                }            
                 if (options.columnsLayout != 'FIELD_GROUP_COLUMNS')
                 {
                     // when groups are used, include a collapse/expand all button in the toolbar
@@ -426,11 +466,14 @@ lib4x.axt.ig.externalRowView = (function($) {
                     ).length;
                     if (groupedFieldsLength > 0)
                     {
-                        toolbar[toolbar.length-1].controls.splice(1, 0, {
-                            action: "lib4x-toggle-collapsibles",
-                            type: 'BUTTON',
-                            iconOnly: true          
-                        });
+                        if (toolbarConf.show) 
+                        {
+                            toolbar[toolbar.length-1].controls.splice(1, 0, {
+                                action: "lib4x-toggle-collapsibles",
+                                type: 'BUTTON',
+                                iconOnly: true          
+                            });
+                        }
                         actionsContext.add([
                         { 
                             name: 'lib4x-toggle-collapsibles', 
@@ -439,8 +482,9 @@ lib4x.axt.ig.externalRowView = (function($) {
                             offLabelKey: 'LIB4X.ERV.EXP_GRP',
                             //onIcon: 'icon-ig-collapse-row',
                             //offIcon: 'icon-ig-expand-row',
-                            onIcon: 'fa fa-compress',
-                            offIcon: 'fa fa-expand',
+                            //onIcon: 'fa fa-compress',
+                            //offIcon: 'fa fa-expand',
+                            icon: 'fa fa-expand-collapse',                            
                             expanded: true,
                             set: function(expanded)
                             {
@@ -523,6 +567,25 @@ lib4x.axt.ig.externalRowView = (function($) {
                         }
                     }
                 }
+                // There is a bug in APEX in  upon revert, any validation messages are not cleared,
+                // causing any save action to popup the 'Correct errors before saving' message.
+                // So below we correct this by clearing the validation errors after revert
+                let revertAction = actionsContext.lookup('revert-record');
+                if (revertAction)
+                {
+                    let origAction = revertAction.action;
+                    revertAction.action = function() {    
+                        origAction();
+                        let model = $("#" + rvStaticIdRv).recordView('getModel');
+                        let record = $("#" + rvStaticIdRv).recordView('getRecord');
+                        let recordId = model.getRecordId(record);
+                        let recMetadata = model.getRecordMetadata(recordId);
+                        if (!modelsModule.util.recordFieldsValid(recMetadata))
+                        {
+                            modelsModule.util.setRecordFieldsValid(model, record);
+                        }
+                    };
+                };                 
                 $("#" + rvStaticIdRv).on( "recordviewrecordchange", function( event, data ) {
                     if (data.recordId)
                     {
@@ -627,22 +690,39 @@ lib4x.axt.ig.externalRowView = (function($) {
                 } 
             }
 
-            // init the ERV upon interactivegridviewchange
-            $('#' + igStaticId).on("interactivegridviewchange", function(jQueryEvent, data) { 
-                if (data && data.created && data.view == 'grid')
-                {  
-                    // IG columns won't be there if the IG is not visible
-                    if (apex.region(igStaticId).call('getViews').grid.view$.grid('getColumns'))  
+            function doInitRvIfIgColumnsPresent(rvStaticId, rvStaticIdRv, igStaticId, doGotoIGSelectedRecord)
+            {
+                // IG columns won't be there if the IG is not visible
+                if (apex.region(igStaticId).call('getViews').grid.view$.grid('getColumns'))  
+                {    
+                    // To be sure, check if the ERV is not there yet
+                    if (!$('#' + rvStaticIdRv).recordView('instance'))
                     {    
-                        // To be sure, check if the ERV is not there yet
-                        if (!$('#' + rvStaticIdRv).recordView('instance'))
-                        {    
-                            doInitRv(rvStaticId, rvStaticIdRv, igStaticId);
-                            // no gotoIGSelectedRecord required as IG selection event will trigger that
+                        doInitRv(rvStaticId, rvStaticIdRv, igStaticId);
+                        if (doGotoIGSelectedRecord)
+                        {
+                            gotoIGSelectedRecord(rvStaticIdRv);
                         }
+                    }
+                }                 
+            }
+
+            // when the related IG has been created, init the ERV
+            if ($('#' + igStaticId + ' .a-IG').data('apexInteractiveGrid') && (apex.region(igStaticId).widget().interactiveGrid('getCurrentViewId') == 'grid'))
+            {
+                doInitRvIfIgColumnsPresent(rvStaticId, rvStaticIdRv, igStaticId, false);
+            }
+            else
+            {
+                // IG to be created yet
+                // init the ERV upon interactivegridviewchange
+                $('#' + igStaticId).on("interactivegridviewchange", function(jQueryEvent, data) { 
+                    if (data && data.created && data.view == 'grid')
+                    {  
+                        doInitRvIfIgColumnsPresent(rvStaticId, rvStaticIdRv, igStaticId, false);
                     } 
-                } 
-            });     
+                });
+            }     
             // when the IG plus ERV is initially not visible (eg in a tab or collapsible region)
             // init the ERV upon becoming visible  
             // also, the instance might exist already, but a refresh is pending to be done
@@ -656,15 +736,7 @@ lib4x.axt.ig.externalRowView = (function($) {
                         // use setTimeout as the IG might also just have become visible and is yet
                         // to complete it's columns initialization
                         setTimeout(()=>{
-                            if (apex.region(igStaticId).call('getViews').grid.view$.grid('getColumns'))  
-                            {     
-                                // to be sure, check again the instance for non-existence
-                                if (!$('#' + rvStaticIdRv).recordView('instance'))
-                                {       
-                                    doInitRv(rvStaticId, rvStaticIdRv, igStaticId);
-                                    gotoIGSelectedRecord(rvStaticIdRv);
-                                }
-                            }  
+                            doInitRvIfIgColumnsPresent(rvStaticId, rvStaticIdRv, igStaticId, true);
                         }, 10);  
                     } 
                     else if ($("#" + rvStaticIdRv).recordView('instance').pendingRefresh)
@@ -819,11 +891,12 @@ lib4x.axt.ig.externalRowView = (function($) {
     /*
      * Main plugin init function
      */
-    let init = function(rvStaticId, igStaticId, columnsLayout, fcs_spanWidth, formLabelWidth, autoHeight, height, initFunc)
+    let init = function(rvStaticId, igStaticId, columnsLayout, fcs_spanWidth, formLabelWidth, autoHeight, height, toolbarConf, initFunc)
     {
         initMessages();
         let rvStaticIdRv = rvStaticId + RV_EXT;
         rv_igStaticId[rvStaticIdRv] = igStaticId;
+        ig_rvStaticId[igStaticId] = rvStaticId;
         // tag the region as being an IG ERV
         $('#'+rvStaticId).addClass(C_LIB4X_IG_ERV);
         if (formLabelWidth)
@@ -836,13 +909,14 @@ lib4x.axt.ig.externalRowView = (function($) {
             // class but should be 't-DrawerRegion--noPadding' class instead
             $('#'+rvStaticId).removeClass('t-DialogRegion--noPadding').addClass('t-DrawerRegion--noPadding');
         }
-        let config = {};        
+        let config = {};
         if (initFunc)
         {
             // call init function which the developer can use to 
             // programmatically specify the config option which are not available declaratively
-            config = initFunc(config);
+            config = initFunc(config) || {};
         }
+        config.toolbarConf = toolbarConf;
         let options = {};
         options.config = config;
         options.columnsLayout = columnsLayout ? columnsLayout : 'NONE';
