@@ -1,6 +1,6 @@
 {
     "name" : "IG External Row View",
-    "version" : "1.0.0",
+    "version" : "1.1.0",
     "description" : "Replace the IG Single Row View with a Row View in a regular region, dialog or drawer. #lib4x",
     "keywords" : ["IG", "Row View", "Edit"],
     "homepage" : "https://github.com/kekema/apex-ig-external-row-view",
@@ -23,12 +23,12 @@
     "oracle" : {
       "versions": ["19.0.0.0"],	
       "apex" : {
-        "versions" : ["24.1"],
+        "versions" : ["24.2"],
         "plugin" : {
           "internalName" : "LIB4X.AXT.IG.EXTERNALROWVIEW",
           "type" : "region",
-	  "demo" : "https://apex.oracle.com/pls/apex/r/yola/sample-interactive-grids/item-type-plug-ins-erv-region3",
-	  "previewImage" : "https://github.com/kekema/apex-ig-external-row-view/blob/main/ig-external-row-view.jpg?raw=true"
+          "demo" : "https://apex.oracle.com/pls/apex/r/yola/sample-interactive-grids/item-type-plug-ins-erv-region3",
+          "previewImage" : "https://github.com/kekema/apex-ig-external-row-view/blob/main/ig-external-row-view.jpg?raw=true"
         }
       }
     }
