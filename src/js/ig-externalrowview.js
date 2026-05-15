@@ -41,7 +41,9 @@ lib4x.axt.ig.externalRowView = (function($) {
         {
             $.widget("apex.grid", $.apex.grid, {
                 setEditMode: function (editMode, select) {
-                    let igStaticId = this.element.closest('.a-IG').interactiveGrid('option').config.regionStaticId;
+                    const [apexMajorVersion, apexMinorVersion, apexPatchVersion] = apex.env.APEX_VERSION.split(".").map(Number);   
+                    let igConfig = this.element.closest('.a-IG').interactiveGrid('option').config;                 
+                    let igStaticId = apexMajorVersion >= 26 ? igConfig.regionDomId : igConfig.regionStaticId;
                     if (ig_rvStaticId.hasOwnProperty(igStaticId))
                     {
                         rowViewModule.setEditMode(ig_rvStaticId[igStaticId], editMode);
@@ -142,6 +144,9 @@ lib4x.axt.ig.externalRowView = (function($) {
                 igActions.add({ 
                     name: 'lib4x-erv-open', 
                     action: function(event) { 
+                        let gridView = apex.region(igStaticId).call('getViews').grid;
+                        let record = gridView.getContextRecord(event.target);
+                        gridView.view$.grid('setSelectedRecords', record);                        
                         rowViewModule.openRowView(rvStaticId);
                     }
                 });  
@@ -216,7 +221,8 @@ lib4x.axt.ig.externalRowView = (function($) {
         // It also illustrates we don't need a jQuery data() entry for it.
         function getIGStaticId(rvStaticIdRv)
         {
-            return ($('#' + rvStaticIdRv).recordView('getModel').getOption('regionStaticId'));
+            // return ($('#' + rvStaticIdRv).recordView('getModel').getOption('regionStaticId'));   // 24.2
+            // return ($('#' + rvStaticIdRv).recordView('getModel').getOption('regionDomId'));   // 26.1
         }
 
         // enables to remove a control from a toolbar group
@@ -523,7 +529,8 @@ lib4x.axt.ig.externalRowView = (function($) {
                     progressOptions: {
                         fixed: false  // by this setting, a fetch/save progress spinner will be in the center of the recordView and not fixed to the page
                     },
-                    regionStaticId: rvStaticId
+                    regionStaticId: rvStaticId,      // 24.2   Not sure if this one is used at all though; it is not an official RV option
+                    regionDomId: rvStaticId          // 26.1
                     // labelAlignment: stick to the default ('end')
                     // progressOptions: stick to the default ({ fixed: !options.hasSize })
                     // recordOffset: no need to set
