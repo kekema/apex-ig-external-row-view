@@ -84,7 +84,8 @@ The recordView widget can be reached via: <br/>
 
 <h4>APEX Compatibility</h4>
 Version 1.0.0 - build under APEX 24.1<br>
-Version 1.1.0 - build under APEX 24.2
+Version 1.1.0 - build under APEX 24.2<br>
+Version 1.1.1 - build under APEX 24.2    (minimum version for APEX 26.1)
 
 
             
