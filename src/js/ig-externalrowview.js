@@ -363,7 +363,7 @@ lib4x.axt.ig.externalRowView = (function($) {
 
         /*
          * Init the ERV. A recordView is instantiated with same field definitions as the IG column definitions, and the same model.
-         * Toolbar is configured. 
+         * Toolbar is configured.
          */
         let initRV = function(rvStaticId, rvStaticIdRv, igStaticId)
         {
@@ -382,14 +382,14 @@ lib4x.axt.ig.externalRowView = (function($) {
                 {
                     throw new Error('Can not have more than 1 External Row View for the same Interactive Grid ('+igStaticId+')');
                 }    
-                // compose the fields for the recordView    
+                // compose the fields for the recordView
                 // the row items are shared between the IG and the recordView,
-                // so the field definitions are just a copy of the IG column definitions                                
+                // so the field definitions are just a copy of the IG column definitions
                 let columns = apex.region(igStaticId).call('getViews').grid.view$.grid('getColumns');
                 let fields = {};
                 for (columnNo in columns)
                 {
-                    // the C_LIB4X_IG_ERV_HIDDEN class can be given on the column (appearance section) or link attributes as to 
+                    // the C_LIB4X_IG_ERV_HIDDEN class can be given on the column (appearance section) or link attributes as to
                     // indicate the column should not be included in the ERV
                     let skip = ((!columns[columnNo].elementId) ||
                                 (columns[columnNo].linkAttributes && columns[columnNo].linkAttributes.includes(C_LIB4X_IG_ERV_HIDDEN)) ||
@@ -400,7 +400,7 @@ lib4x.axt.ig.externalRowView = (function($) {
                         fields[columns[columnNo].property].fieldCssClasses = columns[columnNo].columnCssClasses;
                         delete fields[columns[columnNo].property].columnCssClasses;
                     }
-                }       
+                }
                 // include buttons in the toolbar for crud actions and refresh             
                 let actionsContext = apex.actions.createContext('recordView', $("#" + rvStaticIdRv)[0]);
                 let toolbarConf = options.config.toolbarConf;
@@ -548,6 +548,21 @@ lib4x.axt.ig.externalRowView = (function($) {
                 recordViewOptions = {...recordViewOptions, ...config};
                 // instantiate recordView
                 $("#" + rvStaticIdRv).recordView(recordViewOptions);
+                // Cascading LOV support, part 2 (part 1 is getSessionState in the region interface, see init).
+                // The IG's getSessionState implementation only includes column item values when its current
+                // view has an active record - but while editing happens in the ERV, the grid view never has
+                // one, so the values (and the record's checksum) would be silently dropped. Fall back to the
+                // ERV recordView's active record.
+                let gridViewImpl = apex.region(igStaticId).call('getViews').grid;
+                let origGetActiveRecordId = gridViewImpl.getActiveRecordId;
+                gridViewImpl.getActiveRecordId = function() {
+                    let recordId = origGetActiveRecordId.apply(this, arguments);
+                    if (!recordId && $('#' + rvStaticIdRv).recordView('instance'))
+                    {
+                        recordId = $('#' + rvStaticIdRv).recordView('getActiveRecordId');
+                    }
+                    return recordId;
+                };
                 if ($("#" + rvStaticIdRv).is(':visible'))
                 {
                     adjustRvBody(rvStaticIdRv);
@@ -938,6 +953,17 @@ lib4x.axt.ig.externalRowView = (function($) {
         apex.region.create( rvStaticId, {
             type: "IGExternalRowView",
             parentRegionId: igStaticId,
+            // Cascading LOV support. When a popup LOV with "Items to Submit" fires its ajax, apex.server
+            // resolves the request's region context via region.findClosest(target) and calls that region's
+            // getSessionState(). The IG's implementation splits the submitted names into column items vs
+            // page items, and packages the column values (plus the active record's checksum/salt) into a
+            // region-scoped setSessionState entry - which is the ONLY way the server accepts values for
+            // internal "C<columnId>" column references. Since the shared column items live in the ERV's
+            // DOM, findClosest resolves to THIS region, so without this delegation the column references
+            // leak into pageItems and the server throws ERR-1002 Unable to find item ID.
+            getSessionState: function(pItemsToSubmit) {
+                return apex.region(igStaticId).getSessionState(pItemsToSubmit);
+            },
             widget: function() {
                 return $('#' + rvStaticIdRv);
             },

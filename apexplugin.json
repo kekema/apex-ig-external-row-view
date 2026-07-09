@@ -1,6 +1,6 @@
 {
     "name" : "IG External Row View",
-    "version" : "1.1.1",
+    "version" : "26.1.1",
     "description" : "Replace the IG Single Row View with a Row View in a regular region, dialog or drawer. #lib4x",
     "keywords" : ["IG", "Row View", "Edit"],
     "homepage" : "https://github.com/kekema/apex-ig-external-row-view",
