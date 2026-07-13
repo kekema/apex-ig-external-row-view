@@ -387,7 +387,7 @@ lib4x.axt.ig.externalRowView = (function($) {
                 // so the field definitions are just a copy of the IG column definitions                                
                 let columns = apex.region(igStaticId).call('getViews').grid.view$.grid('getColumns');
                 let fields = {};
-                for (columnNo in columns)
+                for (const columnNo in columns)
                 {
                     // the C_LIB4X_IG_ERV_HIDDEN class can be given on the column (appearance section) or link attributes as to 
                     // indicate the column should not be included in the ERV
@@ -529,7 +529,7 @@ lib4x.axt.ig.externalRowView = (function($) {
                     progressOptions: {
                         fixed: false  // by this setting, a fetch/save progress spinner will be in the center of the recordView and not fixed to the page
                     },
-                    regionStaticId: rvStaticId,      // 24.2   Not sure if this one is used at all though; it is not an official RV option
+                    regionStaticId: rvStaticId,      // 24.2   not used by APEX, but used by validation plugin
                     regionDomId: rvStaticId          // 26.1
                     // labelAlignment: stick to the default ('end')
                     // progressOptions: stick to the default ({ fixed: !options.hasSize })
@@ -866,7 +866,7 @@ lib4x.axt.ig.externalRowView = (function($) {
                 {
                     recordData = {};
                     let fields = widget$.recordView('getFields');
-                    for (field of fields)
+                    for (const field of fields)
                     {
                         if (field.elementId && apex.items.hasOwnProperty(field.elementId))
                         {
@@ -938,6 +938,102 @@ lib4x.axt.ig.externalRowView = (function($) {
         apex.region.create( rvStaticId, {
             type: "IGExternalRowView",
             parentRegionId: igStaticId,
+            // Cascading LOV support. When a popup LOV with "Items to Submit" fires its ajax, apex.server
+            // resolves the request's region context via region.findClosest(target) and calls that region's
+            // getSessionState(). The IG's implementation splits the submitted names into column items vs
+            // page items, and packages the column values (plus the active record's checksum/salt) into a
+            // region-scoped setSessionState entry - which is the ONLY way the server accepts values for
+            // internal "C<columnId>" column references. Since the shared column items live in the ERV's
+            // DOM, findClosest resolves to THIS region, so without this delegation the column references
+            // leak into pageItems and the server throws ERR-1002 Unable to find item ID.
+            // Also see comments John Snyders on getSessionState in blog item: https://hardlikesoftware.com/weblog/2019/11/04/apex-ig-cookbook-update-for-19-2/
+            // getSessionState was documented in the past: https://docs.oracle.com/database/apex-18.1/AEXJS/region.html#.getSessionState
+            // Implemented getSessionState similar to IG Cookbook Page 18 - Edit in Dialog.            
+            getSessionState: function(itemsToSubmit) {
+                let widget = this.widget();                
+                function getColumnById(id) {
+                    let name, field;
+                    let fields = widget.recordView('getFields');
+                    for (name in fields) {
+                        if (fields.hasOwnProperty(name)) {
+                            field = fields[name];
+                            if (field.elementId === id) {
+                                return field;   // recordView field corresponds to IG column
+                            }
+                        }
+                    }
+                    return null;
+                }                
+                let column, meta,
+                    sessionState = {
+                        beforeAsync: function() {
+                            widget.recordView("lockActive");
+                        },
+                        afterAsync: function() {
+                            widget.recordView("unlockActive");
+                        }
+                    },
+                    pageItems = [],
+                    columnItems = [];
+
+                let model = widget.recordView("getModel");    
+                // widget.recordView('getActiveRecordId') and widget.recordView('getRecord') do give null in this stage
+                // looks like we can only get by undocumented currentRecordId property
+                let recordId = widget.recordView("instance").currentRecordId;
+
+                // split out column and page items from itemsToSubmit
+                if ( itemsToSubmit ) {
+                    for (let i = 0; i < itemsToSubmit.length; i++ ) {
+                        column = getColumnById(itemsToSubmit[i]);
+                        // if column exists it's a column item, if not assume it's a page item
+                        if ( column ) {
+                            // only if we have an active record, will we need to store column items
+                            if ( recordId ) { 
+                                const multiValueStorage = apex.item( itemsToSubmit[ i ] ).getMultiValueStorage(); 
+                                let itemDetails = {
+                                    n: column.property,
+                                    v: apex.item( itemsToSubmit[ i ] ).getValue()
+                                };   
+                                if ( multiValueStorage ) {
+                                    if ( multiValueStorage.type ) {
+                                        itemDetails.t = multiValueStorage.type;
+                                    }
+                                    if ( multiValueStorage.separator ) {
+                                        itemDetails.s = multiValueStorage.separator;
+                                    }
+                                }                                                                                       
+                                columnItems.push(itemDetails);
+                            }
+                        } else {
+                            pageItems.push( itemsToSubmit[ i ] );
+                        }
+                    }
+                }
+
+                // if there are no column items, just return the page items
+                sessionState.pageItems = pageItems;
+
+                if ( columnItems.length ) {
+                    // if there are column items, get the current record metadata and return pageItems and the region data
+                    meta = model.getRecordMetadata(recordId);
+                    let igConfig = apex.region(igStaticId).call("option").config;
+                    sessionState.region = {
+                        id: igConfig.regionId,
+                        ajaxIdentifier: igConfig.ajaxIdentifier,
+                        ajaxColumns: igConfig.ajaxColumns,
+                        //reportId: ..., // the report id should not be needed 
+                        view: "grid", // this probably isn't needed either but easy to hardcode
+                        allowedOperations: igConfig.editable.allowedOperations["protected"],
+                        setSessionState: {
+                            values: columnItems,
+                            "protected": meta["protected"],
+                            salt: meta.salt
+                        }
+                    };
+                }
+
+                return sessionState;            
+            },   
             widget: function() {
                 return $('#' + rvStaticIdRv);
             },
